@@ -24,3 +24,5 @@ A text-based cybersecurity red team simulation written in Python.
 
 python main.py
 
+## Testing
+See [TEST_PLAN.md](TEST_PLAN.md)
