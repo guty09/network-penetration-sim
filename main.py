@@ -38,7 +38,9 @@ from typing import Optional
 # -----------------------------
 # Feature toggles (NO FILE LOGGING)
 # -----------------------------
-CLI_DEMO_ENABLED = True   # True = show simulated CLI commands; False = quieter story mode
+CLI_DEMO_ENABLED = (
+    True  # True = show simulated CLI commands; False = quieter story mode
+)
 
 
 # -----------------------------
@@ -69,24 +71,39 @@ EXEMPT_ROOMS: set[str] = {"Jump Box", "Domain Controller", "Monitor Server"}
 # Command normalization
 # -----------------------------
 DIRECTION_SYNONYMS = {
-    "n": "north", "north": "north",
-    "s": "south", "south": "south",
-    "e": "east",  "east":  "east",
-    "w": "west",  "west":  "west",
+    "n": "north",
+    "north": "north",
+    "s": "south",
+    "south": "south",
+    "e": "east",
+    "east": "east",
+    "w": "west",
+    "west": "west",
 }
 
 ACTION_SYNONYMS = {
-    "help": "help", "h": "help", "?": "help",
-    "map": "map", "m": "map",
-    "inventory": "inventory", "inv": "inventory", "i": "inventory",
-    "quit": "quit", "q": "quit", "exit": "quit",
-    "take": "take", "t": "take",
-    "disable": "disable_alerts", "d": "disable_alerts",
+    "help": "help",
+    "h": "help",
+    "?": "help",
+    "map": "map",
+    "m": "map",
+    "inventory": "inventory",
+    "inv": "inventory",
+    "i": "inventory",
+    "quit": "quit",
+    "q": "quit",
+    "exit": "quit",
+    "take": "take",
+    "t": "take",
+    "disable": "disable_alerts",
+    "d": "disable_alerts",
     "scan": "scan",
     "exploit": "exploit",
     "dump": "dump",
-    "detection": "detection", "risk": "detection",
-    "log": "log", "logs": "log",
+    "detection": "detection",
+    "risk": "detection",
+    "log": "log",
+    "logs": "log",
 }
 
 
@@ -156,6 +173,7 @@ class DetectionMeter:
     Higher = more heat (worse).
     Start at 100 (hot), reduce it through progress.
     """
+
     value: int = 100
 
     def add(self, amount: int) -> None:
@@ -227,8 +245,15 @@ class Room:
             return False, "Disable alerts before leaving."
 
         # Only force pickup for take-based rooms
-        if self.obtain_method == "take" and self.item and self.item not in player.inventory:
-            return False, f"You must collect '{self.item}' before leaving. Type: take (or get {self.item})."
+        if (
+            self.obtain_method == "take"
+            and self.item
+            and self.item not in player.inventory
+        ):
+            return (
+                False,
+                f"You must collect '{self.item}' before leaving. Type: take (or get {self.item}).",
+            )
 
         return True, ""
 
@@ -260,7 +285,11 @@ class Game:
                 key="network_segment",
                 name="Network Segment",
                 description="Core routing infrastructure. You see a detailed network map.",
-                exits={"west": "help_desk", "east": "monitor_server", "south": "jump_box"},
+                exits={
+                    "west": "help_desk",
+                    "east": "monitor_server",
+                    "south": "jump_box",
+                },
                 item="network map",
                 obtain_method="take",
             ),
@@ -276,7 +305,11 @@ class Game:
                 key="jump_box",
                 name="Jump Box",
                 description="A hardened system used to pivot into the internal network.",
-                exits={"north": "network_segment", "east": "user_workstation", "south": "web_app_server"},
+                exits={
+                    "north": "network_segment",
+                    "east": "user_workstation",
+                    "south": "web_app_server",
+                },
                 item=None,
             ),
             "user_workstation": Room(
@@ -299,7 +332,11 @@ class Game:
                 key="web_app_server",
                 name="Web App Server",
                 description="Public-facing application server vulnerable to injection.",
-                exits={"west": "file_server", "north": "jump_box", "south": "domain_controller"},
+                exits={
+                    "west": "file_server",
+                    "north": "jump_box",
+                    "south": "domain_controller",
+                },
                 item="SQL injection payload",
                 obtain_method="exploit",
             ),
@@ -364,7 +401,7 @@ class Game:
     def print_block_paged(self, text: str, lines_per_page: int = 10) -> None:
         lines = text.splitlines()
         for i in range(0, len(lines), lines_per_page):
-            chunk = lines[i:i + lines_per_page]
+            chunk = lines[i : i + lines_per_page]
             print("\n".join(chunk))
             if i + lines_per_page < len(lines):
                 self.pause()
@@ -431,41 +468,59 @@ Info:
 
     def print_startup_instructions(self) -> None:
         print("Welcome to the Network Penetration Simulation.")
-        print("Objective: collect required artifacts and compromise the Domain Controller.")
+        print(
+            "Objective: collect required artifacts and compromise the Domain Controller."
+        )
         print("Scoring: faster completion = higher score.\n")
 
     def print_how_to_play(self) -> None:
         print("\n=== HOW TO PLAY ===")
         print("Scenario:")
-        print("  You are a red team operator in a simulated corporate network (authorized test).")
-        print("  Your mission is to complete the full chain and compromise the Domain Controller (DC).")
+        print(
+            "  You are a red team operator in a simulated corporate network (authorized test)."
+        )
+        print(
+            "  Your mission is to complete the full chain and compromise the Domain Controller (DC)."
+        )
         print()
 
         print("Win condition:")
         print("  1) Collect ALL required artifacts (6 total).")
-        print("  2) Enter the DC with LOW ENOUGH detection (heat) to avoid being flagged.")
+        print(
+            "  2) Enter the DC with LOW ENOUGH detection (heat) to avoid being flagged."
+        )
         print()
 
         print("Detection (Heat) meter 0–100:")
         print("  - You START at 100/100 (HIGH heat).")
         print("  - The goal is to push detection DOWN through progress.")
-        print("  - Movement/scan/exploit/dump add small noise (can raise detection slightly).")
-        print("  - Collecting artifacts and disabling alerts reduces detection significantly.")
+        print(
+            "  - Movement/scan/exploit/dump add small noise (can raise detection slightly)."
+        )
+        print(
+            "  - Collecting artifacts and disabling alerts reduces detection significantly."
+        )
         print()
 
         print("How you obtain each artifact (IMPORTANT):")
         print("  - Help Desk System:      take   -> low-priv credentials")
         print("  - Network Segment:       take   -> network map")
         print("  - User Workstation:      take   -> local admin hash")
-        print("  - Web App Server:        exploit -> SQL injection payload (requires low-priv creds)")
-        print("  - File Server:           dump   -> password dump (requires local admin hash)")
+        print(
+            "  - Web App Server:        exploit -> SQL injection payload (requires low-priv creds)"
+        )
+        print(
+            "  - File Server:           dump   -> password dump (requires local admin hash)"
+        )
         print("  - Monitor Server:        disable alerts THEN dump -> Kerberos ticket")
         print()
 
         print("Score + speed:")
         print("  - You earn points for artifacts and objectives.")
         print("  - Every command = 1 TURN.")
-        print("  - On victory, you get a speed bonus if you finish under the target turn count.")
+        print(
+            "  - On victory, you get a speed bonus if you finish under the target turn count."
+        )
         print()
 
         if CLI_DEMO_ENABLED:
@@ -584,9 +639,11 @@ Method: Simulated discovery + service fingerprinting + rule-based findings
         print(f"Inventory: {inv}")
 
         if room.name == "Monitor Server":
-            print("Central monitoring system. Alerts are offline."
-                  if p.alerts_disabled
-                  else "Central monitoring system. Alerts are currently active.")
+            print(
+                "Central monitoring system. Alerts are offline."
+                if p.alerts_disabled
+                else "Central monitoring system. Alerts are currently active."
+            )
         else:
             print(room.description)
 
@@ -598,9 +655,11 @@ Method: Simulated discovery + service fingerprinting + rule-based findings
             print(f"You see: {item}" + (f" — {desc}" if desc else ""))
             print(f"Acquisition: use '{hint}'")
 
-        print(f"Detection: {p.detection.value}/100 ({p.detection.label()})"
-              + (" — alerts disabled" if p.alerts_disabled else "")
-              + (" — network map in use" if p.has_network_map else ""))
+        print(
+            f"Detection: {p.detection.value}/100 ({p.detection.label()})"
+            + (" — alerts disabled" if p.alerts_disabled else "")
+            + (" — network map in use" if p.has_network_map else "")
+        )
 
         exits = ", ".join(room.exits.keys()) if room.exits else "none"
         print(f"Available moves: {exits}")
@@ -654,13 +713,17 @@ Method: Simulated discovery + service fingerprinting + rule-based findings
             return
 
         if room.obtain_method != "take":
-            print(f"You cannot take this directly. Required action: {room.obtain_method}")
+            print(
+                f"You cannot take this directly. Required action: {room.obtain_method}"
+            )
             self.log_event(f"TAKE blocked: {room.name} requires {room.obtain_method}")
             return
 
         if requested_item is not None and requested_item != item:
             print(f"You can't get '{requested_item}' here.")
-            self.log_event(f"GET failed: requested='{requested_item}' available='{item}' in {room.name}")
+            self.log_event(
+                f"GET failed: requested='{requested_item}' available='{item}' in {room.name}"
+            )
             return
 
         self.add_noise(1)
@@ -725,14 +788,18 @@ Method: Simulated discovery + service fingerprinting + rule-based findings
             return
 
         if "low-priv credentials" not in p.inventory:
-            print("Exploit blocked: you need low-priv credentials first (Help Desk System).")
+            print(
+                "Exploit blocked: you need low-priv credentials first (Help Desk System)."
+            )
             self.log_event("EXPLOIT blocked: missing low-priv credentials")
             return
 
         self.add_noise(4)
 
         if CLI_DEMO_ENABLED:
-            self.run_shell_demo("exploit", "sqlmap -u http://10.10.10.80/login --batch (simulated)")
+            self.run_shell_demo(
+                "exploit", "sqlmap -u http://10.10.10.80/login --batch (simulated)"
+            )
 
         print("\n[+] Exploit simulation: probing web input handling...")
         time.sleep(0.2)
@@ -759,14 +826,18 @@ Method: Simulated discovery + service fingerprinting + rule-based findings
                 return
 
             if "local admin hash" not in p.inventory:
-                print("Dump blocked: you need the local admin hash first (User Workstation).")
+                print(
+                    "Dump blocked: you need the local admin hash first (User Workstation)."
+                )
                 self.log_event("DUMP blocked: missing local admin hash for File Server")
                 return
 
             self.add_noise(3)
 
             if CLI_DEMO_ENABLED:
-                self.run_shell_demo("dump", "secretsdump.py DOMAIN/user@10.10.10.55 (simulated)")
+                self.run_shell_demo(
+                    "dump", "secretsdump.py DOMAIN/user@10.10.10.55 (simulated)"
+                )
 
             print("\n[+] Dump simulation: enumerating shares...")
             time.sleep(0.2)
@@ -797,9 +868,13 @@ Method: Simulated discovery + service fingerprinting + rule-based findings
             self.add_noise(2)
 
             if CLI_DEMO_ENABLED:
-                self.run_shell_demo("dump", "ticket-extract --source telemetry-cache (simulated)")
+                self.run_shell_demo(
+                    "dump", "ticket-extract --source telemetry-cache (simulated)"
+                )
 
-            print("\n[+] Dump simulation: pulling auth artifacts from telemetry cache...")
+            print(
+                "\n[+] Dump simulation: pulling auth artifacts from telemetry cache..."
+            )
             time.sleep(0.2)
             print("[+] Token material located (simulated).")
             time.sleep(0.2)
@@ -819,7 +894,9 @@ Method: Simulated discovery + service fingerprinting + rule-based findings
         p = self.player
         if self.current_room.name != "Monitor Server":
             print("No alerts here.")
-            self.log_event(f"DISABLE ALERTS blocked: not in Monitor Server (in {self.current_room.name})")
+            self.log_event(
+                f"DISABLE ALERTS blocked: not in Monitor Server (in {self.current_room.name})"
+            )
             return
 
         if p.alerts_disabled:
@@ -855,7 +932,9 @@ Method: Simulated discovery + service fingerprinting + rule-based findings
 
         prev_name = room.name
         self.current_key = room.exits[direction]
-        self.log_event(f"MOVE {direction}: {prev_name} -> {self.current_room.name} (noise +{move_noise})")
+        self.log_event(
+            f"MOVE {direction}: {prev_name} -> {self.current_room.name} (noise +{move_noise})"
+        )
 
         if self.current_room.name == "Domain Controller":
             self.resolve_domain_controller()
@@ -871,7 +950,9 @@ Method: Simulated discovery + service fingerprinting + rule-based findings
 
         if not self.player.has_all_required(REQUIRED_ITEMS):
             missing = sorted(REQUIRED_ITEMS - self.player.inventory)
-            print("\n🚨 You entered the Domain Controller without all required artifacts.")
+            print(
+                "\n🚨 You entered the Domain Controller without all required artifacts."
+            )
             print("Missing:", ", ".join(missing))
             self.log_event(f"END FAIL: missing artifacts: {', '.join(missing)}")
             self.end_game(False)
@@ -881,8 +962,12 @@ Method: Simulated discovery + service fingerprinting + rule-based findings
         if self.player.detection.value > threshold:
             self.player.add_score(-25, "Flagged at DC entry (detection too high)")
             print(f"\n⚠️  You were flagged entering the DC.")
-            print(f"Required detection <= {threshold}, but you had {self.player.detection.value}.")
-            self.log_event(f"END FAIL: flagged at DC (det={self.player.detection.value}, threshold={threshold})")
+            print(
+                f"Required detection <= {threshold}, but you had {self.player.detection.value}."
+            )
+            self.log_event(
+                f"END FAIL: flagged at DC (det={self.player.detection.value}, threshold={threshold})"
+            )
             self.end_game(False)
             return
 
@@ -898,10 +983,14 @@ Method: Simulated discovery + service fingerprinting + rule-based findings
         print(f"Operator: {self.player.name}")
         print(f"Final Score: {self.player.score}")
         print(f"Turns: {self.player.turns}")
-        print(f"Detection: {self.player.detection.value}/100 ({self.player.detection.label()})")
+        print(
+            f"Detection: {self.player.detection.value}/100 ({self.player.detection.label()})"
+        )
         print("Game over.")
 
-        self.log_event(f"=== SESSION END === victory={victory} score={self.player.score} turns={self.player.turns} det={self.player.detection.value}/100")
+        self.log_event(
+            f"=== SESSION END === victory={victory} score={self.player.score} turns={self.player.turns} det={self.player.detection.value}/100"
+        )
         self.game_over = True
 
     # -----------------------------
@@ -1000,4 +1089,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
