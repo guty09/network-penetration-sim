@@ -20,11 +20,9 @@ All commands and outputs are safely simulated  no real tools or system processes
 
 ## Run
 
-`ash
+```bash
 python main.py
-
-
-
+```
 
 ---
 
