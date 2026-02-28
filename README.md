@@ -1,3 +1,6 @@
+![Banner](assets/banner.png)
+
+
 # Cyber Penetration Sim
 
 A text-based cybersecurity red team simulation written in Python.
