@@ -39,11 +39,11 @@ No real tools or system commands are executed.
 <table>
   <tr>
     <td align="center">
-      <img src="assets/screenshots/game1.png" width="450"><br>
+      <img src="assets/screenshots/game1.png" width="520"><br>
       <sub><b>Gameplay</b></sub>
     </td>
     <td align="center">
-      <img src="assets/screenshots/game2.png" width="450"><br>
+      <img src="assets/screenshots/game2.png" width="520"><br>
       <sub><b>Scan Example</b></sub>
     </td>
   </tr>
