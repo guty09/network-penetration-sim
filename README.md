@@ -50,9 +50,8 @@ No real tools or system commands are executed.
 Clone the repository:
 
 ```bash
-git clone https://github.com/guty09/cyber-penetration-sim.git
-cd cyber-penetration-sim
-python main.py
+git clone https://github.com/guty09/network-penetration-sim.git
+cd network-penetration-sim
 ```
 
 ---
