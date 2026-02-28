@@ -1,4 +1,6 @@
-![Banner](assets/banner1.png)
+<p align="center">
+  <img src="assets/banner1.png" width="700">
+</p>
 
 
 # Cyber Penetration Sim
