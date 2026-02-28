@@ -800,5 +800,79 @@ Run these quickly any time you update the code:
 
 &nbsp; - any prerequisite logic in exploit/dump
 
-&nbsp; - vulnerability summary text (optional)
+&nbsp; - vulnerability summary text (optional)---
+
+## New Feature Tests (v1.1.0)
+
+These tests verify the new functionality added in version 1.1.0:
+- Linux-style ping command
+- Host discovery list
+- hosts / hosts clear commands
+- scan + ping discovery integration
+
+
+### TP-PING-01 — Ping usage message
+**Preconditions:** Game running  
+**Steps:**
+1. Type: `ping`
+**Expected Result:**
+- Game prints `Usage: ping <host>`
+- Game continues running
+
+
+### TP-PING-02 — Ping known host alias
+**Preconditions:** Game running  
+**Steps:**
+1. Type: `ping dc`
+**Expected Result:**
+- Linux-style ping output appears
+- Output shows `10.10.10.10`
+- If reachable, replies are shown
+- If unreachable, 100% packet loss is shown
+
+
+### TP-PING-03 — Ping by IP address
+**Preconditions:** Game running  
+**Steps:**
+1. Type: `ping 10.10.10.55`
+**Expected Result:**
+- Ping output shows the same IP
+- No crash
+
+
+### TP-HOSTS-01 — Hosts list initially empty
+**Preconditions:** New session  
+**Steps:**
+1. Type: `hosts`
+**Expected Result:**
+- Message: `(No hosts discovered yet)`
+
+
+### TP-HOSTS-02 — Scan adds host
+**Preconditions:** Game running  
+**Steps:**
+1. Type: `scan`
+2. Type: `hosts`
+**Expected Result:**
+- Current room host appears in list
+
+
+### TP-HOSTS-03 — Ping adds host
+**Preconditions:** Game running  
+**Steps:**
+1. Type: `ping dc`
+2. Type: `hosts`
+**Expected Result:**
+- Host appears in discovered list
+
+
+### TP-HOSTS-04 — Clear host list
+**Preconditions:** At least one host discovered  
+**Steps:**
+1. Type: `hosts clear`
+2. Type: `hosts`
+**Expected Result:**
+- List is empty
+
+
 
