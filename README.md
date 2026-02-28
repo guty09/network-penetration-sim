@@ -33,15 +33,23 @@ No real tools or system commands are executed.
 
 ---
 
+
 ## Screenshots
 
-<p align="center">
-  <img src="assets/screenshots/game1.png" width="800">
-</p>
+<table>
+  <tr>
+    <td align="center">
+      <img src="assets/screenshots/game1.png" width="450"><br>
+      <sub><b>Gameplay</b></sub>
+    </td>
+    <td align="center">
+      <img src="assets/screenshots/game2.png" width="450"><br>
+      <sub><b>Scan Example</b></sub>
+    </td>
+  </tr>
+</table>
 
-<p align="center">
-  <img src="assets/screenshots/game2.png" width="800">
-</p>
+
 
 ---
 
