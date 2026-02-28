@@ -1,5 +1,6 @@
-# agustin's Network Penetration Simulation
+# Agustin's Network Penetration Simulation
 # Object-Oriented Text-Based Cybersecurity Game
+
 
 
 """
@@ -17,9 +18,13 @@ New features in this version:
     - log 50         -> show last 50 events
     - log all        -> show all events
     - log clear      -> clear the in-game log
-- CLI demo toggle (story mode vs. show simulated commands):
+- Safe simulated CLI output (no real tools):
     - CLI_DEMO_ENABLED = True/False
-  Cross-platform: uses Python itself to print simulated command lines (does not run real tools).
+- NEW: Linux-style simulated ping + host discovery list (memory only):
+    - ping <host>    -> simulated ping output (Linux-like)
+    - hosts          -> show discovered hosts
+    - hosts clear    -> clear discovered hosts
+    - scan + ping automatically discover hosts
 
 This is a simulation (not real pentest tooling).
 """
@@ -38,9 +43,7 @@ from typing import Optional
 # -----------------------------
 # Feature toggles (NO FILE LOGGING)
 # -----------------------------
-CLI_DEMO_ENABLED = (
-    True  # True = show simulated CLI commands; False = quieter story mode
-)
+CLI_DEMO_ENABLED = True  # True = show simulated CLI commands; False = quieter story mode
 
 
 # -----------------------------
@@ -104,6 +107,8 @@ ACTION_SYNONYMS = {
     "risk": "detection",
     "log": "log",
     "logs": "log",
+    "hosts": "hosts",
+    "ping": "ping",  # supports single-word (usage) as well
 }
 
 
@@ -113,9 +118,10 @@ def normalize_command(raw: str) -> tuple[str, Optional[str]]:
 
     Supports:
     - Movement: north/south/east/west, n/s/e/w, go <dir>, move <dir>
-    - Actions: take, get <item>, scan, exploit, dump, disable alerts
+    - Actions: take, get <item>, scan, exploit, dump, ping <host>, disable alerts
     - Info: inventory, detection, map, help, quit
     - Log: log, log 50, log all, log clear
+    - Hosts: hosts, hosts clear
     """
     cmd = raw.lower().strip()
     if not cmd:
@@ -137,6 +143,18 @@ def normalize_command(raw: str) -> tuple[str, Optional[str]]:
         if len(parts) >= 2:
             return ("log", parts[1])
         return ("log", None)
+
+    # "hosts <arg>" support
+    if head == "hosts":
+        if len(parts) >= 2:
+            return ("hosts", parts[1])
+        return ("hosts", None)
+
+    # ping <target...>
+    if head == "ping":
+        if len(parts) == 1:
+            return ("ping", None)
+        return ("ping", " ".join(parts[1:]).strip())
 
     # Direct action aliases (single-word commands)
     if head in ACTION_SYNONYMS:
@@ -203,6 +221,9 @@ class Player:
     has_network_map: bool = False
     detection: DetectionMeter = field(default_factory=DetectionMeter)
 
+    # Discovered hosts: host -> ip
+    discovered_hosts: dict[str, str] = field(default_factory=dict)
+
     def tick_turn(self) -> None:
         self.turns += 1
 
@@ -245,11 +266,7 @@ class Room:
             return False, "Disable alerts before leaving."
 
         # Only force pickup for take-based rooms
-        if (
-            self.obtain_method == "take"
-            and self.item
-            and self.item not in player.inventory
-        ):
+        if self.obtain_method == "take" and self.item and self.item not in player.inventory:
             return (
                 False,
                 f"You must collect '{self.item}' before leaving. Type: take (or get {self.item}).",
@@ -285,11 +302,7 @@ class Game:
                 key="network_segment",
                 name="Network Segment",
                 description="Core routing infrastructure. You see a detailed network map.",
-                exits={
-                    "west": "help_desk",
-                    "east": "monitor_server",
-                    "south": "jump_box",
-                },
+                exits={"west": "help_desk", "east": "monitor_server", "south": "jump_box"},
                 item="network map",
                 obtain_method="take",
             ),
@@ -305,11 +318,7 @@ class Game:
                 key="jump_box",
                 name="Jump Box",
                 description="A hardened system used to pivot into the internal network.",
-                exits={
-                    "north": "network_segment",
-                    "east": "user_workstation",
-                    "south": "web_app_server",
-                },
+                exits={"north": "network_segment", "east": "user_workstation", "south": "web_app_server"},
                 item=None,
             ),
             "user_workstation": Room(
@@ -332,11 +341,7 @@ class Game:
                 key="web_app_server",
                 name="Web App Server",
                 description="Public-facing application server vulnerable to injection.",
-                exits={
-                    "west": "file_server",
-                    "north": "jump_box",
-                    "south": "domain_controller",
-                },
+                exits={"west": "file_server", "north": "jump_box", "south": "domain_controller"},
                 item="SQL injection payload",
                 obtain_method="exploit",
             ),
@@ -371,7 +376,6 @@ class Game:
         if arg == "clear":
             self.session_log.clear()
             print("✅ Session log cleared.")
-            # re-log the clear event after clearing
             self.log_event("Session log cleared.")
             return
 
@@ -393,7 +397,46 @@ class Game:
         print("===================\n")
 
     # -----------------------------
-    # Paging helpers (for readable summaries)
+    # Host discovery (memory only)
+    # -----------------------------
+    def discover_host(self, host: str, ip: str, method: str) -> None:
+        host = host.strip()
+        ip = ip.strip()
+        if not host or not ip:
+            return
+
+        prior = self.player.discovered_hosts.get(host)
+        self.player.discovered_hosts[host] = ip
+
+        if prior is None:
+            self.log_event(f"DISCOVERY: {host} ({ip}) via {method}")
+        elif prior != ip:
+            self.log_event(f"DISCOVERY UPDATE: {host} {prior} -> {ip} via {method}")
+
+    def show_hosts(self, arg: Optional[str]) -> None:
+        """
+        - hosts         -> show discovered hosts
+        - hosts clear   -> clear list
+        """
+        if arg == "clear":
+            self.player.discovered_hosts.clear()
+            print("✅ Discovered host list cleared.")
+            self.log_event("HOSTS cleared")
+            return
+
+        if not self.player.discovered_hosts:
+            print("(No hosts discovered yet)")
+            print("Tip: run 'scan' or 'ping <host>' to discover hosts.\n")
+            return
+
+        print("\n=== DISCOVERED HOSTS ===")
+        for host in sorted(self.player.discovered_hosts.keys(), key=str.lower):
+            ip = self.player.discovered_hosts[host]
+            print(f"- {host:10s}  {ip}")
+        print("========================\n")
+
+    # -----------------------------
+    # Paging helpers
     # -----------------------------
     def pause(self, prompt: str = "Press Enter to continue...") -> None:
         input(prompt)
@@ -449,6 +492,7 @@ Actions:
 - take            (pickup item in take-based rooms)
 - get <item>      (same as take, but validates name)
 - scan            (simulated scan output; adds a little noise)
+- ping <host>     (simulated Linux-style ping; adds a little noise)
 - exploit         (Web App Server only; adds noise)
 - dump            (File Server / Monitor Server; adds noise)
 - disable alerts  (Monitor Server only; BIG detection reduction)
@@ -457,6 +501,8 @@ Info:
 - inventory
 - detection
 - map
+- hosts          (show discovered hosts)
+- hosts clear    (clear discovered hosts)
 - log            (show last 15)
 - log 50         (show last 50)
 - log all        (show all)
@@ -468,68 +514,54 @@ Info:
 
     def print_startup_instructions(self) -> None:
         print("Welcome to the Network Penetration Simulation.")
-        print(
-            "Objective: collect required artifacts and compromise the Domain Controller."
-        )
+        print("Objective: collect required artifacts and compromise the Domain Controller.")
         print("Scoring: faster completion = higher score.\n")
 
     def print_how_to_play(self) -> None:
         print("\n=== HOW TO PLAY ===")
         print("Scenario:")
-        print(
-            "  You are a red team operator in a simulated corporate network (authorized test)."
-        )
-        print(
-            "  Your mission is to complete the full chain and compromise the Domain Controller (DC)."
-        )
+        print("  You are a red team operator in a simulated corporate network (authorized test).")
+        print("  Your mission is to complete the full chain and compromise the Domain Controller (DC).")
         print()
 
         print("Win condition:")
         print("  1) Collect ALL required artifacts (6 total).")
-        print(
-            "  2) Enter the DC with LOW ENOUGH detection (heat) to avoid being flagged."
-        )
+        print("  2) Enter the DC with LOW ENOUGH detection (heat) to avoid being flagged.")
         print()
 
         print("Detection (Heat) meter 0–100:")
         print("  - You START at 100/100 (HIGH heat).")
         print("  - The goal is to push detection DOWN through progress.")
-        print(
-            "  - Movement/scan/exploit/dump add small noise (can raise detection slightly)."
-        )
-        print(
-            "  - Collecting artifacts and disabling alerts reduces detection significantly."
-        )
+        print("  - Movement/scan/exploit/dump/ping add small noise (can raise detection slightly).")
+        print("  - Collecting artifacts and disabling alerts reduces detection significantly.")
         print()
 
         print("How you obtain each artifact (IMPORTANT):")
         print("  - Help Desk System:      take   -> low-priv credentials")
         print("  - Network Segment:       take   -> network map")
         print("  - User Workstation:      take   -> local admin hash")
-        print(
-            "  - Web App Server:        exploit -> SQL injection payload (requires low-priv creds)"
-        )
-        print(
-            "  - File Server:           dump   -> password dump (requires local admin hash)"
-        )
+        print("  - Web App Server:        exploit -> SQL injection payload (requires low-priv creds)")
+        print("  - File Server:           dump   -> password dump (requires local admin hash)")
         print("  - Monitor Server:        disable alerts THEN dump -> Kerberos ticket")
+        print()
+
+        print("Discovery:")
+        print("  - 'scan' and 'ping' add hosts to your in-memory discovered host list.")
+        print("  - Use 'hosts' to view and 'hosts clear' to reset.")
         print()
 
         print("Score + speed:")
         print("  - You earn points for artifacts and objectives.")
         print("  - Every command = 1 TURN.")
-        print(
-            "  - On victory, you get a speed bonus if you finish under the target turn count."
-        )
+        print("  - On victory, you get a speed bonus if you finish under the target turn count.")
         print()
 
         if CLI_DEMO_ENABLED:
-            print("CLI demo mode: ENABLED (scan/exploit/dump show simulated commands)")
+            print("CLI demo mode: ENABLED (scan/ping/exploit/dump show simulated commands)")
         else:
             print("CLI demo mode: DISABLED (story mode)")
 
         print("\nTip: Type 'log' anytime to see your session activity history.\n")
-
         self.pause("Press Enter to view the recon/vulnerability summary...")
 
     def pre_engagement_brief(self) -> None:
@@ -713,9 +745,7 @@ Method: Simulated discovery + service fingerprinting + rule-based findings
             return
 
         if room.obtain_method != "take":
-            print(
-                f"You cannot take this directly. Required action: {room.obtain_method}"
-            )
+            print(f"You cannot take this directly. Required action: {room.obtain_method}")
             self.log_event(f"TAKE blocked: {room.name} requires {room.obtain_method}")
             return
 
@@ -734,6 +764,191 @@ Method: Simulated discovery + service fingerprinting + rule-based findings
 
         self.reduce_detection(12, f"Artifact secured: {item}")
         print(f"You collected: {item}")
+
+    # -----------------------------
+    # Simulated ping (Linux-style)
+    # -----------------------------
+    def _is_ipv4(self, s: str) -> bool:
+        s = s.strip()
+        parts = s.split(".")
+        if len(parts) != 4:
+            return False
+        for p in parts:
+            if not p.isdigit():
+                return False
+            n = int(p)
+            if n < 0 or n > 255:
+                return False
+        return True
+
+    def ping_profile(
+        self, target: str
+    ) -> tuple[bool, int, int, str, Optional[str], Optional[str]]:
+        """
+        Returns:
+          (reachable, loss_pct, rtt_ms, resolved_ip, discovered_host, discovered_ip)
+        """
+        room = self.current_room.name
+        t_raw = target.strip()
+        t = t_raw.lower()
+
+        known_aliases: dict[str, tuple[str, str]] = {
+            "jump": ("JUMP-01", "10.10.10.1"),
+            "jumpbox": ("JUMP-01", "10.10.10.1"),
+            "gateway": ("JUMP-01", "10.10.10.1"),
+            "helpdesk": ("HELPDESK", "10.10.10.11"),
+            "help": ("HELPDESK", "10.10.10.11"),
+            "net": ("NET-CORE", "10.10.10.20"),
+            "net-core": ("NET-CORE", "10.10.10.20"),
+            "monitor": ("MON-01", "10.10.10.30"),
+            "mon": ("MON-01", "10.10.10.30"),
+            "ws": ("WS-041", "10.10.10.41"),
+            "ws-041": ("WS-041", "10.10.10.41"),
+            "file": ("FILE-01", "10.10.10.55"),
+            "file-01": ("FILE-01", "10.10.10.55"),
+            "web": ("WEBAPP", "10.10.10.80"),
+            "webapp": ("WEBAPP", "10.10.10.80"),
+            "dc": ("DC-01", "10.10.10.10"),
+            "dc-01": ("DC-01", "10.10.10.10"),
+        }
+
+        discovered_host: Optional[str] = None
+        discovered_ip: Optional[str] = None
+        resolved_ip = "10.10.10.99"
+
+        is_known = False
+        if t in known_aliases:
+            discovered_host, discovered_ip = known_aliases[t]
+            resolved_ip = discovered_ip
+            is_known = True
+        elif self._is_ipv4(t_raw):
+            resolved_ip = t_raw
+            discovered_host, discovered_ip = t_raw, t_raw
+            is_known = True
+
+        # Strict visibility from Jump Box
+        if room == "Jump Box":
+            if t in ("gateway", "jump", "jumpbox") or t_raw == "10.10.10.1":
+                return True, 0, 7, "10.10.10.1", "JUMP-01", "10.10.10.1"
+            return False, 100, 0, resolved_ip, None, None
+
+        # Base loss depends on intel / environment
+        base_loss = 0 if self.player.has_network_map else 25
+
+        # Alerts active in sensitive rooms -> likely filtering / drops
+        if room in ("Monitor Server", "Domain Controller") and not self.player.alerts_disabled:
+            base_loss = max(base_loss, 50)
+
+        # High detection -> tighter controls
+        det = self.player.detection.value
+        if det >= 85:
+            base_loss = max(base_loss, 50)
+        elif det >= 60:
+            base_loss = max(base_loss, 25)
+
+        reachable = is_known
+        rtt = 10 if self.player.has_network_map else 18
+        return reachable, base_loss, rtt, resolved_ip, discovered_host, discovered_ip
+
+    def simulate_ping_output_linux(
+        self,
+        target_label: str,
+        resolved_ip: str,
+        reachable: bool,
+        loss_pct: int,
+        rtt_ms: int,
+        count: int = 4,
+    ) -> str:
+        """
+        Linux-style ping output:
+          PING host (ip) 56(84) bytes of data.
+          64 bytes from ip: icmp_seq=1 ttl=64 time=... ms
+          ...
+          --- host ping statistics ---
+          4 packets transmitted, 4 received, 0% packet loss, time 3004ms
+          rtt min/avg/max/mdev = ...
+        """
+        target_label = target_label.strip()
+        resolved_ip = resolved_ip.strip()
+
+        if not target_label:
+            return "usage: ping <host>\n"
+
+        lines: list[str] = []
+        lines.append(f"PING {target_label} ({resolved_ip}) 56(84) bytes of data.")
+
+        if not reachable:
+            lines.append("")  # blank line before stats
+            lines.append(f"--- {target_label} ping statistics ---")
+            lines.append(f"{count} packets transmitted, 0 received, 100% packet loss, time {count*1000}ms")
+            return "\n".join(lines) + "\n"
+
+        # Determine how many replies we "receive" based on loss %
+        received = count - round(count * (loss_pct / 100))
+        received = max(1, min(count, received))
+        lost = count - received
+        loss_line = int((lost / count) * 100)
+
+        # Build replies (icmp_seq starts at 1 in many Linux examples)
+        times: list[float] = []
+        for seq in range(1, received + 1):
+            t_ms = float(rtt_ms + (seq - 1))
+            times.append(t_ms)
+            lines.append(f"64 bytes from {resolved_ip}: icmp_seq={seq} ttl=64 time={t_ms:.1f} ms")
+
+        lines.append("")
+        lines.append(f"--- {target_label} ping statistics ---")
+        lines.append(
+            f"{count} packets transmitted, {received} received, {loss_line}% packet loss, time {count*1000}ms"
+        )
+
+        # rtt summary (only if at least 1 received)
+        t_min = min(times)
+        t_max = max(times)
+        t_avg = sum(times) / len(times)
+        # quick mdev-ish value (simple, not true stddev)
+        mdev = max(0.1, (t_max - t_min) / 2.0)
+        lines.append(f"rtt min/avg/max/mdev = {t_min:.3f}/{t_avg:.3f}/{t_max:.3f}/{mdev:.3f} ms")
+
+        return "\n".join(lines) + "\n"
+
+    def cmd_ping(self, target: Optional[str]) -> None:
+        if not target:
+            print("Usage: ping <host>")
+            self.log_event("PING failed: missing target")
+            return
+
+        # Ping is low-noise recon
+        self.add_noise(1)
+
+        reachable, loss, rtt, resolved_ip, d_host, d_ip = self.ping_profile(target)
+
+        if CLI_DEMO_ENABLED:
+            # Linux-like command shape (still simulated)
+            self.run_shell_demo("ping", f"ping -c 4 {target} (simulated)")
+
+        out = self.simulate_ping_output_linux(
+            target_label=target,
+            resolved_ip=resolved_ip,
+            reachable=reachable,
+            loss_pct=loss,
+            rtt_ms=rtt,
+            count=4,
+        )
+
+        print("\n=== SIMULATED PING OUTPUT ===")
+        print(out.rstrip())
+        print("============================\n")
+
+        if reachable and d_host and d_ip:
+            self.discover_host(d_host, d_ip, method="ping")
+            print(f"[+] Discovered: {d_host} ({d_ip})\n")
+        else:
+            print("Note: ICMP may be blocked; lack of reply doesn’t prove the host is down.\n")
+
+        self.log_event(
+            f"PING: target={target} resolved={resolved_ip} reachable={reachable} loss={loss}% rtt~{rtt}ms in {self.current_room.name}"
+        )
 
     def cmd_scan(self) -> None:
         self.add_noise(2)
@@ -771,6 +986,11 @@ Method: Simulated discovery + service fingerprinting + rule-based findings
         print(hints.get(room, "Finding: No additional intel."))
         print("=============================\n")
 
+        # Scan discovers current room host
+        if host != "UNKNOWN":
+            self.discover_host(host, ip, method="scan")
+            print(f"[+] Discovered: {host} ({ip})\n")
+
         self.log_event(f"SCAN: {host} ({ip}) in {room}")
 
     def cmd_exploit(self) -> None:
@@ -788,18 +1008,14 @@ Method: Simulated discovery + service fingerprinting + rule-based findings
             return
 
         if "low-priv credentials" not in p.inventory:
-            print(
-                "Exploit blocked: you need low-priv credentials first (Help Desk System)."
-            )
+            print("Exploit blocked: you need low-priv credentials first (Help Desk System).")
             self.log_event("EXPLOIT blocked: missing low-priv credentials")
             return
 
         self.add_noise(4)
 
         if CLI_DEMO_ENABLED:
-            self.run_shell_demo(
-                "exploit", "sqlmap -u http://10.10.10.80/login --batch (simulated)"
-            )
+            self.run_shell_demo("exploit", "sqlmap -u http://10.10.10.80/login --batch (simulated)")
 
         print("\n[+] Exploit simulation: probing web input handling...")
         time.sleep(0.2)
@@ -826,18 +1042,14 @@ Method: Simulated discovery + service fingerprinting + rule-based findings
                 return
 
             if "local admin hash" not in p.inventory:
-                print(
-                    "Dump blocked: you need the local admin hash first (User Workstation)."
-                )
+                print("Dump blocked: you need the local admin hash first (User Workstation).")
                 self.log_event("DUMP blocked: missing local admin hash for File Server")
                 return
 
             self.add_noise(3)
 
             if CLI_DEMO_ENABLED:
-                self.run_shell_demo(
-                    "dump", "secretsdump.py DOMAIN/user@10.10.10.55 (simulated)"
-                )
+                self.run_shell_demo("dump", "secretsdump.py DOMAIN/user@10.10.10.55 (simulated)")
 
             print("\n[+] Dump simulation: enumerating shares...")
             time.sleep(0.2)
@@ -868,13 +1080,9 @@ Method: Simulated discovery + service fingerprinting + rule-based findings
             self.add_noise(2)
 
             if CLI_DEMO_ENABLED:
-                self.run_shell_demo(
-                    "dump", "ticket-extract --source telemetry-cache (simulated)"
-                )
+                self.run_shell_demo("dump", "ticket-extract --source telemetry-cache (simulated)")
 
-            print(
-                "\n[+] Dump simulation: pulling auth artifacts from telemetry cache..."
-            )
+            print("\n[+] Dump simulation: pulling auth artifacts from telemetry cache...")
             time.sleep(0.2)
             print("[+] Token material located (simulated).")
             time.sleep(0.2)
@@ -950,9 +1158,7 @@ Method: Simulated discovery + service fingerprinting + rule-based findings
 
         if not self.player.has_all_required(REQUIRED_ITEMS):
             missing = sorted(REQUIRED_ITEMS - self.player.inventory)
-            print(
-                "\n🚨 You entered the Domain Controller without all required artifacts."
-            )
+            print("\n🚨 You entered the Domain Controller without all required artifacts.")
             print("Missing:", ", ".join(missing))
             self.log_event(f"END FAIL: missing artifacts: {', '.join(missing)}")
             self.end_game(False)
@@ -961,10 +1167,8 @@ Method: Simulated discovery + service fingerprinting + rule-based findings
         threshold = 40 if self.player.alerts_disabled else 55
         if self.player.detection.value > threshold:
             self.player.add_score(-25, "Flagged at DC entry (detection too high)")
-            print(f"\n⚠️  You were flagged entering the DC.")
-            print(
-                f"Required detection <= {threshold}, but you had {self.player.detection.value}."
-            )
+            print("\n⚠️  You were flagged entering the DC.")
+            print(f"Required detection <= {threshold}, but you had {self.player.detection.value}.")
             self.log_event(
                 f"END FAIL: flagged at DC (det={self.player.detection.value}, threshold={threshold})"
             )
@@ -983,9 +1187,7 @@ Method: Simulated discovery + service fingerprinting + rule-based findings
         print(f"Operator: {self.player.name}")
         print(f"Final Score: {self.player.score}")
         print(f"Turns: {self.player.turns}")
-        print(
-            f"Detection: {self.player.detection.value}/100 ({self.player.detection.label()})"
-        )
+        print(f"Detection: {self.player.detection.value}/100 ({self.player.detection.label()})")
         print("Game over.")
 
         self.log_event(
@@ -1024,6 +1226,14 @@ Method: Simulated discovery + service fingerprinting + rule-based findings
 
             if action == "log":
                 self.show_log(arg)
+                continue
+
+            if action == "hosts":
+                self.show_hosts(arg)
+                continue
+
+            if action == "ping":
+                self.cmd_ping(arg)
                 continue
 
             if action == "get":
