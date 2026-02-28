@@ -1,8 +1,5 @@
 <p align="center">
-  <img src="assets/banner1.png" width="700">
-</p>
-
-<p align="center">
+  <img src="assets/banner1.png" width="700"><br>
   <img src="https://img.shields.io/badge/Python-3.x-blue" />
   <img src="https://img.shields.io/badge/Status-Stable-brightgreen" />
   <img src="https://img.shields.io/badge/Release-v1.1.0-orange" />
@@ -38,21 +35,27 @@ No real tools or system commands are executed.
 
 ## Screenshots
 
-![Gameplay](assets/screenshots/game1.png)
+<p align="center">
+  <img src="assets/screenshots/game1.png" width="800">
+</p>
 
-![Scan Example](assets/screenshots/game2.png)
+<p align="center">
+  <img src="assets/screenshots/game2.png" width="800">
+</p>
 
 ---
 
 ## How to Run
-
 
 Clone the repository:
 
 ```bash
 git clone https://github.com/guty09/network-penetration-sim.git
 cd network-penetration-sim
+python main.py
 ```
+
+Requires Python 3.9 or newer.
 
 ---
 
