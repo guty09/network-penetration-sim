@@ -4,9 +4,8 @@ A text-based cybersecurity red team simulation written in Python.
 
 This project simulates an authorized internal penetration test where the player navigates a corporate network, collects required artifacts, manages detection risk, disables monitoring systems, discovers hosts, and attempts to compromise the final target.
 
-All commands are simulated.
+All commands are simulated.  
 No real tools or system commands are executed.
-
 
 ---
 
@@ -25,82 +24,83 @@ No real tools or system commands are executed.
 - Final target validation logic
 - Manual functional test plan included
 
-
 ---
 
 ## How to Run
 
 Clone the repository:
 
-git clone https://github.com/guty09/cyber-penetration-sim.git  
-cd cyber-penetration-sim  
-python main.py  
+```bash
+git clone https://github.com/guty09/cyber-penetration-sim.git
+cd cyber-penetration-sim
+python main.py
+```
 
 Requires Python 3.9 or newer.
-
 
 ---
 
 ## Objective
 
-1. Collect all required artifacts
-2. Reduce detection risk
-3. Disable monitoring alerts
-4. Discover hosts on the network
-5. Enter the final target prepared
-6. Avoid detection failure
-
+1. Collect all required artifacts  
+2. Reduce detection risk  
+3. Disable monitoring alerts  
+4. Discover hosts on the network  
+5. Enter the final target prepared  
+6. Avoid detection failure  
 
 ---
 
 ## Commands
 
-Navigation
+### Navigation
 
-north  
-south  
-east  
-west  
-n  
-s  
-e  
-w  
-go <direction>  
-move <direction>  
+```
+north
+south
+east
+west
+n
+s
+e
+w
+go <direction>
+move <direction>
+```
 
+### Game commands
 
-Game commands
-
-scan  
-ping <host>  
-hosts  
-hosts clear  
-map  
-inventory  
-detection  
-log  
-log 50  
-log all  
-log clear  
-take  
-exploit  
-dump  
-disable alerts  
-help  
-quit  
-
+```
+scan
+ping <host>
+hosts
+hosts clear
+map
+inventory
+detection
+log
+log 50
+log all
+log clear
+take
+exploit
+dump
+disable alerts
+help
+quit
+```
 
 ---
 
 ## Project Structure
 
+```
 cyber-penetration-sim/
-
-main.py  
-README.md  
-TEST_PLAN.md  
-docs/  
-
+├── main.py
+├── README.md
+├── TEST_PLAN.md
+└── docs/
+```
 
 ---
 
@@ -108,7 +108,11 @@ docs/
 
 Manual functional testing is documented in detail.
 
-See TEST_PLAN.md
+See:
+
+```
+TEST_PLAN.md
+```
 
 The test plan verifies:
 
@@ -122,7 +126,6 @@ The test plan verifies:
 - ping simulation
 - endgame validation
 
-
 ---
 
 ## Notes
@@ -132,7 +135,6 @@ The test plan verifies:
 - No network traffic is generated
 - No files are written during gameplay
 - Safe to run on any system
-
 
 ---
 
