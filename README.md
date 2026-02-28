@@ -2,6 +2,12 @@
   <img src="assets/banner1.png" width="700">
 </p>
 
+<p align="center">
+  <img src="https://img.shields.io/badge/Python-3.x-blue" />
+  <img src="https://img.shields.io/badge/Status-Stable-brightgreen" />
+  <img src="https://img.shields.io/badge/Release-v1.1.0-orange" />
+</p>
+
 
 # Cyber Penetration Sim
 
@@ -99,12 +105,21 @@ quit
 
 ## Project Structure
 
-```
-cyber-penetration-sim/
+``cyber-penetration-sim/
 ├── main.py
 ├── README.md
-├── TEST_PLAN.md
-└── docs/
+├── CHANGELOG.md
+├── SECURITY.md
+├── docs/
+│   ├── TEST_PLAN.md
+│   ├── usage.md
+│   ├── architecture.md
+│   └── diagrams/
+│       └── architecture.mmd
+└── assets/
+    └── banner1.png`
+
+
 ```
 
 ---
