@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/banner1.png" width="700"><br>
+  <img src="assets/banner1.png" width="500"><br>
   <img src="https://img.shields.io/badge/Python-3.x-blue" />
   <img src="https://img.shields.io/badge/Status-Stable-brightgreen" />
   <img src="https://img.shields.io/badge/Release-v1.1.0-orange" />
