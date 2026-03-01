@@ -1,0 +1,34 @@
+classDiagram
+
+class Game {
+    main_loop()
+    process_command()
+    update_state()
+    check_win()
+    check_fail()
+}
+
+class Player {
+    inventory
+    score
+    detection_level
+    current_room
+}
+
+class Room {
+    description
+    exits
+    items
+}
+
+class DetectionMeter {
+    level
+    increase()
+    decrease()
+    is_max()
+}
+
+Game --> Player
+Game --> Room
+Game --> DetectionMeter
+Player --> Room

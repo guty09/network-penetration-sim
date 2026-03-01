@@ -64,3 +64,11 @@ This keeps the program safe while making the game feel realistic.
 ## Notes
 
 Object-oriented programming was used to keep the program structured and easier to expand.
+
+## Diagram
+
+The architecture diagram for this project is stored in the diagrams directory.
+
+docs/diagrams/architecture.mmd
+
+The diagram shows the relationship between the Game, Player, Room, and DetectionMeter classes.
