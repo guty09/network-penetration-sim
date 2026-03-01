@@ -1,4 +1,4 @@
-<p align="center">
+﻿<p align="center">
   <img src="assets/banner1.png" width="500"><br>
   <img src="https://img.shields.io/badge/Python-3.x-blue" />
   <img src="https://img.shields.io/badge/Status-Stable-brightgreen" />
@@ -88,3 +88,12 @@ The test plan verifies:
 - host discovery
 - ping simulation
 - endgame validation
+
+Documentation
+
+Additional documentation is available in the docs directory.
+
+- docs/architecture.md
+- docs/usage.md
+- docs/TEST_PLAN.md
+- docs/diagrams/
