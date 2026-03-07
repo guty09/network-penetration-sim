@@ -1,6 +1,8 @@
 # Agustin's Network Penetration Simulation
 # Object-Oriented Text-Based Cybersecurity Game
 
+# Agustin's Network Penetration Simulation
+# Object-Oriented Text-Based Cybersecurity Game
 
 """
 Network Penetration Simulation (OOP + Actions + Score + Speed Bonus)
@@ -19,7 +21,7 @@ New features in this version:
     - log clear      -> clear the in-game log
 - Safe simulated CLI output (no real tools):
     - CLI_DEMO_ENABLED = True/False
-- NEW: Linux-style simulated ping + host discovery list (memory only):
+- Linux-style simulated ping + host discovery list (memory only):
     - ping <host>    -> simulated ping output (Linux-like)
     - hosts          -> show discovered hosts
     - hosts clear    -> clear discovered hosts
@@ -107,7 +109,7 @@ ACTION_SYNONYMS = {
     "log": "log",
     "logs": "log",
     "hosts": "hosts",
-    "ping": "ping",  # supports single-word (usage) as well
+    "ping": "ping",
 }
 
 
@@ -250,6 +252,10 @@ class Room:
     item: Optional[str] = None
     obtain_method: str = "take"  # 'take' | 'exploit' | 'dump'
 
+    # Added map_label so each room stores its own short map name.
+    # This is more object-oriented than keeping the labels in a separate dictionary.
+    map_label: str = ""
+
     def visible_item(self, player: Player) -> Optional[str]:
         if self.item and self.item not in player.inventory:
             return self.item
@@ -296,6 +302,7 @@ class Game:
                 exits={"east": "network_segment", "south": "file_server"},
                 item="low-priv credentials",
                 obtain_method="take",
+                map_label="HELP",
             ),
             "network_segment": Room(
                 key="network_segment",
@@ -304,6 +311,7 @@ class Game:
                 exits={"west": "help_desk", "east": "monitor_server", "south": "jump_box"},
                 item="network map",
                 obtain_method="take",
+                map_label="NET",
             ),
             "monitor_server": Room(
                 key="monitor_server",
@@ -312,6 +320,7 @@ class Game:
                 exits={"west": "network_segment", "south": "user_workstation"},
                 item="Kerberos ticket",
                 obtain_method="dump",
+                map_label="MON",
             ),
             "jump_box": Room(
                 key="jump_box",
@@ -319,6 +328,7 @@ class Game:
                 description="A hardened system used to pivot into the internal network.",
                 exits={"north": "network_segment", "east": "user_workstation", "south": "web_app_server"},
                 item=None,
+                map_label="JUMP",
             ),
             "user_workstation": Room(
                 key="user_workstation",
@@ -327,6 +337,7 @@ class Game:
                 exits={"west": "jump_box", "north": "monitor_server"},
                 item="local admin hash",
                 obtain_method="take",
+                map_label="USER",
             ),
             "file_server": Room(
                 key="file_server",
@@ -335,6 +346,7 @@ class Game:
                 exits={"north": "help_desk", "east": "web_app_server"},
                 item="password dump",
                 obtain_method="dump",
+                map_label="FILE",
             ),
             "web_app_server": Room(
                 key="web_app_server",
@@ -343,6 +355,7 @@ class Game:
                 exits={"west": "file_server", "north": "jump_box", "south": "domain_controller"},
                 item="SQL injection payload",
                 obtain_method="exploit",
+                map_label="WEB",
             ),
             "domain_controller": Room(
                 key="domain_controller",
@@ -350,6 +363,7 @@ class Game:
                 description="The core of the domain. Blue Team detection is active.",
                 exits={"north": "web_app_server"},
                 item=None,
+                map_label="DC",
             ),
         }
 
@@ -570,7 +584,7 @@ Info:
         print("[+] Internal routing path confirmed via jump box")
         print("[!] Monitoring system detected (alerts likely active)")
         print("[!] Web application exposure identified (possible injection point)")
-        print("[!] Credential reuse suspected on internal hosts")
+        print("[!] Credential reuse suspected on internal hosts)")
         print("[!] High-value target detected: Domain Controller (heavy monitoring)")
         print("Proceed with caution.")
         print("=================================\n")
@@ -629,35 +643,47 @@ Method: Simulated discovery + service fingerprinting + rule-based findings
         print("\n=== END VULNERABILITY SUMMARY ===\n")
         self.pause("Press Enter to begin...")
 
+    # -----------------------------
+    # Improved map rendering
+    # -----------------------------
     def show_map(self) -> None:
-        room_name = self.current_room.name
+        """
+        Render a cleaner network map using a helper function.
+
+        Why this is better:
+        - The room label comes from the Room object itself (map_label).
+        - The current room marker is handled in one place.
+        - The layout is easier to maintain and explain.
+        - This was adapted from instructor feedback about improving map usability.
+        """
+
+        def m(room_key: str) -> str:
+            """
+            Render one room box.
+            The current room is marked with * on both sides of the short label.
+            Example:
+                [*JUMP*]
+                [ HELP ]
+            """
+            room = self.rooms[room_key]
+            mark = "*" if room_key == self.current_key else " "
+            label = room.map_label.center(4)
+            return f"[{mark}{label}{mark}]"
+
         print("\n=== NETWORK MAP ===")
+        print(
+            f"""
+{m("help_desk")} ⇄ {m("network_segment")} ⇄ {m("monitor_server")}
+      ⇅               ⇅               ⇅
+{m("file_server")}     ⇄ {m("jump_box")} ⇄ {m("user_workstation")}
+                        ⇅
+                    {m("web_app_server")}
+                        ⇅
+                    {m("domain_controller")}
 
-        help_mark = "*" if room_name == "Help Desk System" else " "
-        net_mark = "*" if room_name == "Network Segment" else " "
-        mon_mark = "*" if room_name == "Monitor Server" else " "
-        print(f"[{help_mark}Help] ---- [{net_mark}Net ] ---- [{mon_mark}Mon ]")
-
-        print("   |          |          |")
-
-        jump_mark = "*" if room_name == "Jump Box" else " "
-        user_mark = "*" if room_name == "User Workstation" else " "
-        print(f"          [{jump_mark}Jump] ---- [{user_mark}User]")
-
-        print("             |")
-        print("             |")
-
-        file_mark = "*" if room_name == "File Server" else " "
-        web_mark = "*" if room_name == "Web App Server" else " "
-        print(f"[{file_mark}File] ---- [{web_mark}Web ]")
-
-        print("               |")
-        print("               |")
-
-        dc_mark = "*" if room_name == "Domain Controller" else " "
-        print(f"            [{dc_mark}DC  ]")
-
-        print("===================\n")
+*ROOM* = you are here
+"""
+        )
 
     def show_room(self) -> None:
         room = self.current_room
@@ -859,13 +885,7 @@ Method: Simulated discovery + service fingerprinting + rule-based findings
         count: int = 4,
     ) -> str:
         """
-        Linux-style ping output:
-          PING host (ip) 56(84) bytes of data.
-          64 bytes from ip: icmp_seq=1 ttl=64 time=... ms
-          ...
-          --- host ping statistics ---
-          4 packets transmitted, 4 received, 0% packet loss, time 3004ms
-          rtt min/avg/max/mdev = ...
+        Linux-style ping output.
         """
         target_label = target_label.strip()
         resolved_ip = resolved_ip.strip()
@@ -877,18 +897,16 @@ Method: Simulated discovery + service fingerprinting + rule-based findings
         lines.append(f"PING {target_label} ({resolved_ip}) 56(84) bytes of data.")
 
         if not reachable:
-            lines.append("")  # blank line before stats
+            lines.append("")
             lines.append(f"--- {target_label} ping statistics ---")
             lines.append(f"{count} packets transmitted, 0 received, 100% packet loss, time {count*1000}ms")
             return "\n".join(lines) + "\n"
 
-        # Determine how many replies we "receive" based on loss %
         received = count - round(count * (loss_pct / 100))
         received = max(1, min(count, received))
         lost = count - received
         loss_line = int((lost / count) * 100)
 
-        # Build replies (icmp_seq starts at 1 in many Linux examples)
         times: list[float] = []
         for seq in range(1, received + 1):
             t_ms = float(rtt_ms + (seq - 1))
@@ -901,11 +919,9 @@ Method: Simulated discovery + service fingerprinting + rule-based findings
             f"{count} packets transmitted, {received} received, {loss_line}% packet loss, time {count*1000}ms"
         )
 
-        # rtt summary (only if at least 1 received)
         t_min = min(times)
         t_max = max(times)
         t_avg = sum(times) / len(times)
-        # quick mdev-ish value (simple, not true stddev)
         mdev = max(0.1, (t_max - t_min) / 2.0)
         lines.append(f"rtt min/avg/max/mdev = {t_min:.3f}/{t_avg:.3f}/{t_max:.3f}/{mdev:.3f} ms")
 
@@ -917,13 +933,11 @@ Method: Simulated discovery + service fingerprinting + rule-based findings
             self.log_event("PING failed: missing target")
             return
 
-        # Ping is low-noise recon
         self.add_noise(1)
 
         reachable, loss, rtt, resolved_ip, d_host, d_ip = self.ping_profile(target)
 
         if CLI_DEMO_ENABLED:
-            # Linux-like command shape (still simulated)
             self.run_shell_demo("ping", f"ping -c 4 {target} (simulated)")
 
         out = self.simulate_ping_output_linux(
@@ -985,7 +999,6 @@ Method: Simulated discovery + service fingerprinting + rule-based findings
         print(hints.get(room, "Finding: No additional intel."))
         print("=============================\n")
 
-        # Scan discovers current room host
         if host != "UNKNOWN":
             self.discover_host(host, ip, method="scan")
             print(f"[+] Discovered: {host} ({ip})\n")
