@@ -1,6 +1,6 @@
 # Test Plan — Network Penetration Simulation (OOP + Actions + Score + Detection + In-Game Log)
 
-## 1) Overview
+## 1 Overview
 
 This test plan verifies the core gameplay loop, command parsing, room navigation, artifact acquisition rules, detection/score mechanics, in-game session log behavior, and endgame conditions.
 
