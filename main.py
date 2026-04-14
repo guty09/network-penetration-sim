@@ -1,8 +1,6 @@
 # Agustin's Network Penetration Simulation
 # Object-Oriented Text-Based Cybersecurity Game
 
-# Agustin's Network Penetration Simulation
-# Object-Oriented Text-Based Cybersecurity Game
 
 """
 Network Penetration Simulation (OOP + Actions + Score + Speed Bonus)
