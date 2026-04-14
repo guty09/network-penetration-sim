@@ -2,7 +2,7 @@
 
 
 
-\## Scope
+## Scope
 
 This project is an educational simulation. It is not intended for real-world offensive use.
 
