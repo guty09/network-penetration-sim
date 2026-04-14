@@ -17,7 +17,7 @@ No real tools or system commands are executed.
 ---
 
 ## Features
-
+- - Improved network map rendering
 - CLI-based interactive gameplay
 - Object-oriented (OOP) structure
 - Detection and scoring mechanics
