@@ -1,6 +1,6 @@
 # Architecture
 
-## Overview
+# Overview
 
 This project is a text-based cybersecurity red team simulation written in Python.  
 The program is built using object-oriented programming to keep the code organized and easier to maintain.
